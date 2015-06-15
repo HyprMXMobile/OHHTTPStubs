@@ -224,8 +224,11 @@ static NSTimeInterval const kSlotTime = 0.25; // Must be >0. We will send a chun
     BOOL handlerFound = NO;
     @synchronized(_stubDescriptors)
     {
-        handlerFound = [_stubDescriptors containsObject:stubDesc];
+        if (handlerFound && [_stubDescriptors count] > 2)
+            NSLog(@"_stubDescriptors before remove = %@", _stubDescriptors);
         [_stubDescriptors removeObject:stubDesc];
+        if (handlerFound && [_stubDescriptors count] > 2)
+            NSLog(@"_stubDescriptors after remove = %@", _stubDescriptors);
     }
     return handlerFound;
 }
