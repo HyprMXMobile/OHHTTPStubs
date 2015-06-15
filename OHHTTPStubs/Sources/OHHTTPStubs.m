@@ -308,6 +308,10 @@ static NSTimeInterval const kSlotTime = 0.25; // Must be >0. We will send a chun
 	return request;
 }
 
++ (BOOL)requestIsCacheEquivalent:(NSURLRequest *)a toRequest:(NSURLRequest *)b {
+    return [super requestIsCacheEquivalent:a toRequest:b];
+}
+
 - (NSCachedURLResponse *)cachedResponse
 {
 	return nil;
