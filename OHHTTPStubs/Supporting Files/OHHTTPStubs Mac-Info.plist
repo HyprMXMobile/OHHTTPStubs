@@ -9,7 +9,11 @@
 	<key>CFBundleIconFile</key>
 	<string></string>
 	<key>CFBundleIdentifier</key>
+<<<<<<< HEAD
 	<string>com.alisoftware.${PRODUCT_NAME:rfc1034identifier}</string>
+=======
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+>>>>>>> upstream/master
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

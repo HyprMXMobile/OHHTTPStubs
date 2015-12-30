@@ -44,7 +44,7 @@ static NSTimeInterval const kSlotTime = 0.25; // Must be >0. We will send a chun
 @interface OHHTTPStubs()
 + (instancetype)sharedInstance;
 @property(atomic, copy) NSMutableArray* stubDescriptors;
-@property(atomic, copy) void (^onStubActivationBlock)(NSURLRequest*, id<OHHTTPStubsDescriptor>);
+@property(atomic, copy, nullable) void (^onStubActivationBlock)(NSURLRequest*, id<OHHTTPStubsDescriptor>);
 @end
 
 @interface OHHTTPStubsDescriptor : NSObject <OHHTTPStubsDescriptor>
@@ -108,7 +108,8 @@ static NSTimeInterval const kSlotTime = 0.25; // Must be >0. We will send a chun
         [self setEnabled:YES];
     }
 }
-- (id)init
+
+- (instancetype)init
 {
     self = [super init];
     if (self)
@@ -141,10 +142,7 @@ static NSTimeInterval const kSlotTime = 0.25; // Must be >0. We will send a chun
 {
     return [OHHTTPStubs.sharedInstance removeStub:stubDesc];
 }
-+(void)removeLastStub
-{
-    [OHHTTPStubs.sharedInstance removeLastStub];
-}
+
 +(void)removeAllStubs
 {
     [OHHTTPStubs.sharedInstance removeAllStubs];
@@ -201,7 +199,7 @@ static NSTimeInterval const kSlotTime = 0.25; // Must be >0. We will send a chun
     return [OHHTTPStubs.sharedInstance stubDescriptors];
 }
 
-+(void)onStubActivation:( void(^)(NSURLRequest* request, id<OHHTTPStubsDescriptor> stub) )block
++(void)onStubActivation:( nullable void(^)(NSURLRequest* request, id<OHHTTPStubsDescriptor> stub) )block
 {
     [OHHTTPStubs.sharedInstance setOnStubActivationBlock:block];
 }
@@ -230,13 +228,6 @@ static NSTimeInterval const kSlotTime = 0.25; // Must be >0. We will send a chun
     return handlerFound;
 }
 
--(void)removeLastStub
-{
-    @synchronized(_stubDescriptors)
-    {
-        [_stubDescriptors removeLastObject];
-    }
-}
 
 -(void)removeAllStubs
 {
@@ -307,6 +298,7 @@ static NSTimeInterval const kSlotTime = 0.25; // Must be >0. We will send a chun
 + (BOOL)requestIsCacheEquivalent:(NSURLRequest *)a toRequest:(NSURLRequest *)b {
     return [super requestIsCacheEquivalent:a toRequest:b];
 }
+
 
 - (NSCachedURLResponse *)cachedResponse
 {

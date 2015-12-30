@@ -22,15 +22,21 @@
  *
  ***********************************************************************************/
 
-
+#import <Availability.h>
 // Compile this only if SDK version (…MAX_ALLOWED) is iOS7+/10.9+ because NSURLSession is a class only known starting these SDKs
 // (this code won't compile if we use an eariler SDKs, like when building with Xcode4)
 #if (defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 70000) \
- || (defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1090)
+|| (defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1090) \
+|| (defined(__TV_OS_VERSION_MIN_REQUIRED) || defined(__WATCH_OS_VERSION_MIN_REQUIRED))
 
 #import <XCTest/XCTest.h>
+
+#if OHHTTPSTUBS_USE_STATIC_LIBRARY
 #import "OHHTTPStubs.h"
 #import "OHHTTPStubsResponse+JSON.h"
+#else
+@import OHHTTPStubs;
+#endif
 
 @interface NSURLSessionTests : XCTestCase <NSURLSessionDataDelegate> @end
 
@@ -68,24 +74,24 @@
         __block __strong id dataResponse = nil;
         __block __strong NSError* errorResponse = nil;
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"foo://unknownhost:666"]];
-        [request setHTTPMethod:@"GET"];
+        request.HTTPMethod = @"GET";
         [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
         [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
         
         NSURLSessionDataTask *task =  [session dataTaskWithRequest:request
                                                  completionHandler:^(NSData *data, NSURLResponse *response, NSError *error)
-        {
-            errorResponse = error;
-            if (!error)
-            {
-                NSError *jsonError = nil;
-                NSDictionary *jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
-                XCTAssertNil(jsonError, @"Unexpected error deserializing JSON response");
-                dataResponse = jsonObject;
-            }
-            [expectation fulfill];
-        }];
-
+                                       {
+                                           errorResponse = error;
+                                           if (!error)
+                                           {
+                                               NSError *jsonError = nil;
+                                               NSDictionary *jsonObject = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+                                               XCTAssertNil(jsonError, @"Unexpected error deserializing JSON response");
+                                               dataResponse = jsonObject;
+                                           }
+                                           [expectation fulfill];
+                                       }];
+        
         [task resume];
         
         [self waitForExpectationsWithTimeout:kRequestTime+kResponseTime+0.5 handler:nil];

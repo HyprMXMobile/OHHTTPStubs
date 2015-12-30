@@ -22,8 +22,17 @@
  *
  ***********************************************************************************/
 
+#import <Availability.h>
+// tvOS & watchOS deprecate use of NSURLConnection but these tests are based on it
+#if (!defined(__TV_OS_VERSION_MIN_REQUIRED) && !defined(__WATCH_OS_VERSION_MIN_REQUIRED))
+
 #import <XCTest/XCTest.h>
+
+#if OHHTTPSTUBS_USE_STATIC_LIBRARY
 #import "OHHTTPStubs.h"
+#else
+@import OHHTTPStubs;
+#endif
 
 @interface NSURLConnectionTests : XCTestCase @end
 
@@ -149,26 +158,26 @@ static const NSTimeInterval kResponseTime = 0.5;
     {
         NSString* desc = [NSString stringWithFormat:@"Asynchronous request with response time %.f finished", responseTime];
         XCTestExpectation* expectation = [self expectationWithDescription:desc];
-
+        
         NSString* urlString = [NSString stringWithFormat:@"http://dummyrequest/concurrent/time/%f",responseTime];
         NSURLRequest* req = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
-//        [SenTestLog testLogWithFormat:@"== Sending request %@\n", req];
+        //        [SenTestLog testLogWithFormat:@"== Sending request %@\n", req];
         NSDate* startDate = [NSDate date];
         [NSURLConnection sendAsynchronousRequest:req queue:queue completionHandler:^(NSURLResponse* resp, NSData* data, NSError* error)
          {
-//             [SenTestLog testLogWithFormat:@"== Received response for request %@\n", req];
+             //             [SenTestLog testLogWithFormat:@"== Received response for request %@\n", req];
              XCTAssertEqualObjects(data, dataForRequest(req), @"Invalid data response");
              XCTAssertEqualWithAccuracy(-[startDate timeIntervalSinceNow], (responseTime*.1)+responseTime, kResponseTimeTolerence, @"Invalid response time");
              
              if (!testFinished) [expectation fulfill];
          }];
     };
-
+    
     static NSTimeInterval time3 = 1.5, time2 = 1.0, time1 = 0.5;
     sendAsyncRequest(time3); // send this one first, should receive last
     sendAsyncRequest(time2); // send this one next, shoud receive 2nd
     sendAsyncRequest(time1); // send this one last, should receive first
-
+    
     [self waitForExpectationsWithTimeout:MAX(time1,MAX(time2,time3))+kResponseTimeTolerence handler:nil];
     testFinished = YES;
 }
@@ -185,3 +194,5 @@ static const NSTimeInterval kResponseTime = 0.5;
 
 
 @end
+
+#endif
