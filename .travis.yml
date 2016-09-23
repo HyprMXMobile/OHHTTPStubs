@@ -1,4 +1,8 @@
 language: objective-c
+<<<<<<< HEAD
+=======
+osx_image: xcode7.1
+>>>>>>> upstream/master
 
 before_install:
   - gem install xcpretty --no-rdoc --no-ri --no-document --quiet
@@ -7,8 +11,14 @@ env:
   #- RAKETASK="simlist"
   #- RAKETASK="ios[iOS StaticLib,7.1,test]"
   - RAKETASK="ios[iOS StaticLib,latest,test]"
+<<<<<<< HEAD
   - RAKETASK="ios[iOS Framework,latest,analyze]"
   - RAKETASK="osx[Mac Framework,x86_64,test]"
+=======
+  - RAKETASK="ios[iOS Framework,latest,test]"
+  - RAKETASK="osx[Mac Framework,x86_64,test]"
+  - RAKETASK="tvos[tvOS Framework,latest,test]"
+>>>>>>> upstream/master
 
 script:
   - rake "$RAKETASK"

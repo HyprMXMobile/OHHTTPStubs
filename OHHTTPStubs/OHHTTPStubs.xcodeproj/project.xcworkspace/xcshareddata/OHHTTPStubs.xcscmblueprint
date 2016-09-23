@@ -1,0 +1,30 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "38C2A0D4F62B675E8C16C8BC1437C7753846C8AC",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "38C2A0D4F62B675E8C16C8BC1437C7753846C8AC" : 0,
+    "F07B8755BD6EAF4F3B19024E6330ACF813E528E5" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "C0BB3C6F-DF96-42B1-AE2E-21A1B6BA2202",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "38C2A0D4F62B675E8C16C8BC1437C7753846C8AC" : "OHHTTPStubs\/",
+    "F07B8755BD6EAF4F3B19024E6330ACF813E528E5" : "..\/.."
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "OHHTTPStubs",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "OHHTTPStubs\/OHHTTPStubs.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:HyprMXMobile\/OHHTTPStubs.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "38C2A0D4F62B675E8C16C8BC1437C7753846C8AC"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:HyprMXMobile\/iOS-Framework.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "F07B8755BD6EAF4F3B19024E6330ACF813E528E5"
+    }
+  ]
+}

@@ -22,8 +22,18 @@
  *
  ***********************************************************************************/
 
+#import <Availability.h>
+// tvOS & watchOS deprecate use of NSURLConnection but these tests are based on it
+#if (!defined(__TV_OS_VERSION_MIN_REQUIRED) && !defined(__WATCH_OS_VERSION_MIN_REQUIRED))
+
 #import <XCTest/XCTest.h>
+
+#if OHHTTPSTUBS_USE_STATIC_LIBRARY
 #import "OHHTTPStubs.h"
+#import "OHPathHelpers.h"
+#else
+@import OHHTTPStubs;
+#endif
 
 static const NSTimeInterval kResponseTimeTolerence = 0.3;
 
@@ -42,7 +52,10 @@ static const NSTimeInterval kResponseTimeTolerence = 0.3;
     [OHHTTPStubs stubRequestsPassingTest:^BOOL(NSURLRequest *request) {
         return YES;
     } withStubResponse:^OHHTTPStubsResponse *(NSURLRequest *request) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnonnull"
         return [OHHTTPStubsResponse responseWithData:nil statusCode:400 headers:nil];
+#pragma clang diagnostic pop
     }];
     
     XCTestExpectation* expectation = [self expectationWithDescription:@"Network request's completionHandler called"];
@@ -91,8 +104,39 @@ static const NSTimeInterval kResponseTimeTolerence = 0.3;
     [OHHTTPStubs stubRequestsPassingTest:^BOOL(NSURLRequest *request) {
         return YES;
     } withStubResponse:^OHHTTPStubsResponse *(NSURLRequest *request) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnonnull"
         return [[OHHTTPStubsResponse responseWithFileAtPath:nil statusCode:501 headers:nil]
                 requestTime:0.01 responseTime:0.01];
+#pragma clang diagnostic pop
+    }];
+    
+    XCTestExpectation* expectation = [self expectationWithDescription:@"Network request's completionHandler called"];
+    
+    NSURLRequest* req = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://www.iana.org/domains/example/"]];
+    
+    [NSURLConnection sendAsynchronousRequest:req
+                                       queue:[NSOperationQueue mainQueue]
+                           completionHandler:^(NSURLResponse* resp, NSData* data, NSError* error)
+     {
+         XCTAssertEqual(data.length, (NSUInteger)0, @"Data should be empty");
+         
+         [expectation fulfill];
+     }];
+    
+    [self waitForExpectationsWithTimeout:kResponseTimeTolerence handler:nil];
+}
+
+- (void)test_NilPathWithURL
+{
+    [OHHTTPStubs stubRequestsPassingTest:^BOOL(NSURLRequest *request) {
+        return YES;
+    } withStubResponse:^OHHTTPStubsResponse *(NSURLRequest *request) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnonnull"
+        return [[OHHTTPStubsResponse responseWithFileURL:nil statusCode:501 headers:nil]
+                requestTime:0.01 responseTime:0.01];
+#pragma clang diagnostic pop
     }];
     
     XCTestExpectation* expectation = [self expectationWithDescription:@"Network request's completionHandler called"];
@@ -113,11 +157,35 @@ static const NSTimeInterval kResponseTimeTolerence = 0.3;
 
 - (void)test_InvalidPath
 {
+    XCTAssertThrowsSpecificNamed([OHHTTPStubsResponse responseWithFileAtPath:@"foo/bar" statusCode:501 headers:nil]
+                                 , NSException, NSInternalInconsistencyException, @"An exception should be thrown if a non-file URL is given");
+}
+
+- (void)test_InvalidPathWithURL
+{
+    NSURL *httpURL = [NSURL fileURLWithPath:@"foo/bar"];
+    NSAssert(httpURL, @"If the URL is nil an empty response is sent instead of an exception being thrown");
+    XCTAssertThrowsSpecificNamed([OHHTTPStubsResponse responseWithFileURL:httpURL statusCode:501 headers:nil]
+                                 , NSException, NSInternalInconsistencyException, @"An exception should be thrown if a non-file URL is given");
+}
+
+- (void)test_NonFileURL
+{
+    NSURL *httpURL = [NSURL URLWithString:@"http://www.iana.org/domains/example/"];
+    NSAssert(httpURL, @"If the URL is nil an empty response is sent instead of an exception being thrown");
+    XCTAssertThrowsSpecificNamed([OHHTTPStubsResponse responseWithFileURL:httpURL statusCode:501 headers:nil]
+                                 , NSException, NSInternalInconsistencyException, @"An exception should be thrown if a non-file URL is given");
+}
+
+
+- (void)test_EmptyFile
+{
     [OHHTTPStubs stubRequestsPassingTest:^BOOL(NSURLRequest *request) {
         return YES;
     } withStubResponse:^OHHTTPStubsResponse *(NSURLRequest *request) {
-        return [[OHHTTPStubsResponse responseWithFileAtPath:@"-invalid-path-" statusCode:500 headers:nil]
-        requestTime:0.01 responseTime:0.01];
+        NSString* emptyFile = OHPathForFile(@"emptyfile.json", self.class);
+        return [[OHHTTPStubsResponse responseWithFileAtPath:emptyFile statusCode:500 headers:nil]
+                requestTime:0.01 responseTime:0.01];
     }];
     
     XCTestExpectation* expectation = [self expectationWithDescription:@"Network request's completionHandler called"];
@@ -136,13 +204,13 @@ static const NSTimeInterval kResponseTimeTolerence = 0.3;
     [self waitForExpectationsWithTimeout:kResponseTimeTolerence handler:nil];
 }
 
-- (void)test_EmptyFile
+- (void)test_EmptyFileWithURL
 {
     [OHHTTPStubs stubRequestsPassingTest:^BOOL(NSURLRequest *request) {
         return YES;
     } withStubResponse:^OHHTTPStubsResponse *(NSURLRequest *request) {
-        NSString* emptyFile = OHPathForFileInBundle(@"emptyfile.json", nil);
-        return [[OHHTTPStubsResponse responseWithFileAtPath:emptyFile statusCode:500 headers:nil]
+        NSURL *fileURL = [[NSBundle bundleForClass:[self class]] URLForResource:@"emptyfile" withExtension:@"json"];
+        return [[OHHTTPStubsResponse responseWithFileURL:fileURL statusCode:500 headers:nil]
                 requestTime:0.01 responseTime:0.01];
     }];
     
@@ -176,8 +244,11 @@ static const NSTimeInterval kResponseTimeTolerence = 0.3;
     
     XCTestExpectation* expectation = [self expectationWithDescription:@"Network request's completionHandler called"];
     
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnonnull"
     NSMutableURLRequest* req = [NSMutableURLRequest requestWithURL:nil];
-    [req setHTTPShouldHandleCookies:handleCookiesEnabled];
+#pragma clang diagnostic pop
+    req.HTTPShouldHandleCookies = handleCookiesEnabled;
     
     __block NSData* response = nil;
     
@@ -205,3 +276,5 @@ static const NSTimeInterval kResponseTimeTolerence = 0.3;
 }
 
 @end
+
+#endif

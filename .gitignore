@@ -1,5 +1,9 @@
 # Xcode
+<<<<<<< HEAD
 build/*
+=======
+build/
+>>>>>>> upstream/master
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -13,3 +17,10 @@ profile
 *.moved-aside
 .DS_Store
 *.xccheckout
+<<<<<<< HEAD
+=======
+
+# Carthage
+Carthage/
+OHHTTPStubs.framework.zip
+>>>>>>> upstream/master

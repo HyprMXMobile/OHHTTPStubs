@@ -23,8 +23,17 @@
  ***********************************************************************************/
 
 
+#import <Availability.h>
+// tvOS & watchOS deprecate use of NSURLConnection but these tests are based on it
+#if (!defined(__TV_OS_VERSION_MIN_REQUIRED) && !defined(__WATCH_OS_VERSION_MIN_REQUIRED))
+
 #import <XCTest/XCTest.h>
+
+#if OHHTTPSTUBS_USE_STATIC_LIBRARY
 #import "OHHTTPStubs.h"
+#else
+@import OHHTTPStubs;
+#endif
 
 @interface TimingTests : XCTestCase
 {
@@ -41,6 +50,8 @@
 
 -(void)setUp
 {
+    [super setUp];
+
     _data = [NSMutableData new];
     _error = nil;
 //    _didReceiveResponseTS = nil;
@@ -49,7 +60,7 @@
 }
 -(void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
-    [_data setLength:0U];
+    _data.length = 0U;
     // NOTE: This timing info is not reliable as Cocoa always calls the connection:didReceiveResponse: delegate method just before
     // calling the first "connection:didReceiveData:", even if the [id<NSURLProtocolClient> URLProtocol:didReceiveResponse:…] method was called way before. So we are not testing this
 //    _didReceiveResponseTS = [NSDate date];
@@ -158,3 +169,6 @@ static NSTimeInterval const kSecurityTimeout = 5.0;
 }
 
 @end
+
+
+#endif

@@ -23,10 +23,18 @@
  ***********************************************************************************/
 
 #import <XCTest/XCTest.h>
+#import <Availability.h>
+
+#if OHHTTPSTUBS_USE_STATIC_LIBRARY
 #import "OHHTTPStubs.h"
 #import "OHHTTPStubsResponse+JSON.h"
+#else
+@import OHHTTPStubs;
+#endif
 
-#import "AFHTTPRequestOperation.h"
+#import "AFHTTPSessionManager.h"
+
+static const NSTimeInterval kResponseTimeTolerence = 1.0;
 
 @interface AFNetworkingTests : XCTestCase @end
 
@@ -52,20 +60,20 @@
     
     XCTestExpectation* expectation = [self expectationWithDescription:@"AFHTTPRequestOperation request finished"];
     
-    NSURLRequest* req = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://www.iana.org/domains/example/"]];
-    AFHTTPRequestOperation* op = [[AFHTTPRequestOperation alloc] initWithRequest:req];
-    [op setResponseSerializer:[AFHTTPResponseSerializer serializer]];
+    NSURL *URL = [NSURL URLWithString:@"http://www.iana.org/domains/example/"];
+    
     __block __strong id response = nil;
-    [op setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+    AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
+    [manager setResponseSerializer:[AFHTTPResponseSerializer serializer]];
+    [manager GET:URL.absoluteString parameters:nil progress:nil success:^(NSURLSessionTask *task, id responseObject) {
         response = responseObject; // keep strong reference
         [expectation fulfill];
-    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+    } failure:^(NSURLSessionTask *operation, NSError *error) {
         XCTFail(@"Unexpected network failure");
         [expectation fulfill];
     }];
-    [op start];
     
-    [self waitForExpectationsWithTimeout:kRequestTime+kResponseTime+0.8 handler:nil];
+    [self waitForExpectationsWithTimeout:kRequestTime+kResponseTime+kResponseTimeTolerence handler:nil];
     
     XCTAssertEqualObjects(response, expectedResponse, @"Unexpected data received");
 }
@@ -84,31 +92,30 @@
     
     XCTestExpectation* expectation = [self expectationWithDescription:@"AFHTTPRequestOperation request finished"];
     
-    NSURLRequest* req = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://www.iana.org/domains/example/"]];
-    AFHTTPRequestOperation* op = [[AFHTTPRequestOperation alloc] initWithRequest:req];
+    NSURL *URL = [NSURL URLWithString:@"http://www.iana.org/domains/example/"];
+    AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
     AFHTTPResponseSerializer* serializer = [AFHTTPResponseSerializer serializer];
     [serializer  setAcceptableStatusCodes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(200, 101)]];
-    [op setResponseSerializer:serializer];
-
+    [manager setResponseSerializer:serializer];
+    
     __block __strong id response = nil;
-    [op setRedirectResponseBlock:^NSURLRequest *(NSURLConnection *connection, NSURLRequest *request, NSURLResponse *redirectResponse) {
-        if (redirectResponse == nil) {
+    [manager setTaskWillPerformHTTPRedirectionBlock:^NSURLRequest * (NSURLSession * session, NSURLSessionTask * task, NSURLResponse * response, NSURLRequest * request) {
+        if (response == nil) {
             return request;
         }
         XCTFail(@"Unexpected redirect");
         return nil;
     }];
-    
-    [op setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+
+    [manager GET:URL.absoluteString parameters:nil progress:nil success:^(NSURLSessionTask *task, id responseObject) {
         response = responseObject; // keep strong reference
         [expectation fulfill];
-    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+    } failure:^(NSURLSessionTask *operation, NSError *error) {
         XCTFail(@"Unexpected network failure");
         [expectation fulfill];
     }];
-    [op start];
     
-    [self waitForExpectationsWithTimeout:kRequestTime+kResponseTime+0.8 handler:nil];
+    [self waitForExpectationsWithTimeout:kRequestTime+kResponseTime+kResponseTimeTolerence handler:nil];
     
     XCTAssertEqualObjects(response, expectedResponse, @"Unexpected data received");
 }
@@ -122,19 +129,19 @@
     [OHHTTPStubs stubRequestsPassingTest:^BOOL(NSURLRequest *request) {
         return YES;
     } withStubResponse:^OHHTTPStubsResponse *(NSURLRequest *request) {
-        return [[OHHTTPStubsResponse responseWithData:nil statusCode:311 headers:@{@"Location":redirectURL.absoluteString}]
+        return [[OHHTTPStubsResponse responseWithData:[NSData data] statusCode:311 headers:@{@"Location":redirectURL.absoluteString}]
                 requestTime:kRequestTime responseTime:kResponseTime];
     }];
     
     XCTestExpectation* expectation = [self expectationWithDescription:@"AFHTTPRequestOperation request finished"];
     
     NSURLRequest* req = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://www.iana.org/domains/example/"]];
-    AFHTTPRequestOperation* op = [[AFHTTPRequestOperation alloc] initWithRequest:req];
-    [op setResponseSerializer:[AFHTTPResponseSerializer serializer]];
+    AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
+    [manager setResponseSerializer:[AFHTTPResponseSerializer serializer]];
     
     __block __strong NSURL* url = nil;
-    [op setRedirectResponseBlock:^NSURLRequest *(NSURLConnection *connection, NSURLRequest *request, NSURLResponse *redirectResponse) {
-        if (redirectResponse == nil) {
+    [manager setTaskWillPerformHTTPRedirectionBlock:^NSURLRequest * (NSURLSession * session, NSURLSessionTask * task, NSURLResponse * response, NSURLRequest * request) {
+        if (response == nil) {
             return request;
         }
         url = request.URL;
@@ -142,16 +149,15 @@
         return nil;
     }];
     
-    [op setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+    [manager GET:req.URL.absoluteString parameters:nil progress:nil success:^(NSURLSessionTask *task, id responseObject) {
         XCTFail(@"Unexpected response");
         [expectation fulfill];
-    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+    } failure:^(NSURLSessionTask *operation, NSError *error) {
         XCTFail(@"Unexpected network failure");
         [expectation fulfill];
     }];
-    [op start];
     
-    [self waitForExpectationsWithTimeout:kRequestTime+kResponseTime+0.8 handler:nil];
+    [self waitForExpectationsWithTimeout:kRequestTime+kResponseTime+kResponseTimeTolerence handler:nil];
     
     XCTAssertEqualObjects(url, redirectURL, @"Unexpected data received");
 }
@@ -165,7 +171,9 @@
 // Compile this only if SDK version (…MAX_ALLOWED) is iOS7+/10.9+ because NSURLSession is a class only known starting these SDKs
 // (this code won't compile if we use an eariler SDKs, like when building with Xcode4)
 #if (defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 70000) \
- || (defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1090)
+|| (defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1090) \
+|| (defined(__TV_OS_VERSION_MIN_REQUIRED) || defined(__WATCH_OS_VERSION_MIN_REQUIRED))
+
 
 #import "AFHTTPSessionManager.h"
 
@@ -197,6 +205,7 @@
         __block __strong id response = nil;
         [sessionManager GET:@"foo"
                  parameters:nil
+                   progress:nil
                     success:^(NSURLSessionDataTask *task, id responseObject) {
                         response = responseObject; // keep strong reference
                         [expectation fulfill];
@@ -206,7 +215,7 @@
                         [expectation fulfill];
                     }];
         
-        [self waitForExpectationsWithTimeout:kRequestTime+kResponseTime+1.0 handler:nil];
+        [self waitForExpectationsWithTimeout:kRequestTime+kResponseTime+kResponseTimeTolerence handler:nil];
         
         XCTAssertEqualObjects(response, expectedResponseDict, @"Unexpected data received");
     }

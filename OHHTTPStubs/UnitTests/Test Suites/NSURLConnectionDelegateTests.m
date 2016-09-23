@@ -22,8 +22,17 @@
  *
  ***********************************************************************************/
 
+#import <Availability.h>
+// tvOS & watchOS deprecate use of NSURLConnection but these tests are based on it
+#if (!defined(__TV_OS_VERSION_MIN_REQUIRED) && !defined(__WATCH_OS_VERSION_MIN_REQUIRED))
+
 #import <XCTest/XCTest.h>
+
+#if OHHTTPSTUBS_USE_STATIC_LIBRARY
 #import "OHHTTPStubs.h"
+#else
+@import OHHTTPStubs;
+#endif
 
 @interface NSURLConnectionDelegateTests : XCTestCase <NSURLConnectionDataDelegate> @end
 
@@ -69,7 +78,7 @@ static const NSTimeInterval kResponseTimeTolerence = 0.2;
     {
         if ([response isKindOfClass:NSHTTPURLResponse.class])
         {
-            _redirectResponseStatusCode = [((NSHTTPURLResponse *) response) statusCode];
+            _redirectResponseStatusCode = ((NSHTTPURLResponse *) response).statusCode;
         }
         else
         {
@@ -85,7 +94,7 @@ static const NSTimeInterval kResponseTimeTolerence = 0.2;
 
 -(void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
-    [_data setLength:0U];
+    _data.length = 0U;
 }
 
 -(void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
@@ -231,7 +240,7 @@ static const NSTimeInterval kResponseTimeTolerence = 0.2;
             [waitExpectation fulfill];
         });
     });
-
+    
     [self waitForExpectationsWithTimeout:5 handler:^(NSError *error) {
         // in case we timed out before the end of the request (test failed), cancel the request to avoid further delegate method calls
         [cxn cancel];
@@ -268,7 +277,7 @@ static const NSTimeInterval kResponseTimeTolerence = 0.2;
     // (especially in case the previous policy was "NSHTTPCookieAcceptPolicyNever")
     NSHTTPCookieStorage* cookieStorage = NSHTTPCookieStorage.sharedHTTPCookieStorage;
     NSHTTPCookieAcceptPolicy previousAcceptPolicy = cookieStorage.cookieAcceptPolicy; // keep it to restore later
-    [cookieStorage setCookieAcceptPolicy:NSHTTPCookieAcceptPolicyOnlyFromMainDocumentDomain];
+    cookieStorage.cookieAcceptPolicy = NSHTTPCookieAcceptPolicyOnlyFromMainDocumentDomain;
     
     // Send the request and wait for the response containing the Set-Cookie headers
     NSURLRequest* req = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://www.iana.org/domains/example/"]];
@@ -290,10 +299,10 @@ static const NSTimeInterval kResponseTimeTolerence = 0.2;
     }
     XCTAssertTrue(cookieFound, @"The cookie was not stored as expected");
     
-
+    
     // As a courtesy, restore previous policy before leaving
-    [cookieStorage setCookieAcceptPolicy:previousAcceptPolicy];
-
+    cookieStorage.cookieAcceptPolicy = previousAcceptPolicy;
+    
 }
 
 
@@ -315,7 +324,7 @@ static const NSTimeInterval kResponseTimeTolerence = 0.2;
     // (especially in case the previous policy was "NSHTTPCookieAcceptPolicyNever")
     NSHTTPCookieStorage* cookieStorage = NSHTTPCookieStorage.sharedHTTPCookieStorage;
     NSHTTPCookieAcceptPolicy previousAcceptPolicy = cookieStorage.cookieAcceptPolicy; // keep it to restore later
-    [cookieStorage setCookieAcceptPolicy:NSHTTPCookieAcceptPolicyOnlyFromMainDocumentDomain];
+    cookieStorage.cookieAcceptPolicy = NSHTTPCookieAcceptPolicyOnlyFromMainDocumentDomain;
     
     NSString* endCookieName = @"googleCookie";
     NSString* endCookieValue = [NSProcessInfo.processInfo globallyUniqueString];
@@ -388,7 +397,9 @@ static const NSTimeInterval kResponseTimeTolerence = 0.2;
     
     
     // As a courtesy, restore previous policy before leaving
-    [cookieStorage setCookieAcceptPolicy:previousAcceptPolicy];
+    cookieStorage.cookieAcceptPolicy = previousAcceptPolicy;
 }
 
 @end
+
+#endif
